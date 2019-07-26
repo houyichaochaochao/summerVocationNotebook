@@ -6,5 +6,6 @@
 
 
 ---
-## 另外在此项目中我日后会补充我们的web项目，基于spring boot，spring，springMVC，这些框架
-## 欢迎大家指正
+## 另外在此项目中我日后会补充我们的web项目，基于spring boot，spring，springMVC这些框架。
+---
+## 欢迎大家指正！
