@@ -1,0 +1,1350 @@
+Hive & HBase 安装配置   
+
+Hive 安装、配置
+只在 master 上安装， 运行时需要先启动 hadoop 。
+1. 下载
+    1. 下载 Hive 
+        https://hive.apache.org/    
+            http://www.apache.org/dyn/closer.cgi/hive/
+                http://www.apache.org/dyn/closer.cgi/hive/
+                    http://mirrors.shu.edu.cn/apache/hive/
+                        http://mirrors.shu.edu.cn/apache/hive/hive-2.3.2/
+                        apache-hive-2.3.2-bin.tar.gz
+        最新版：
+            1 November 2018: release 3.1.1 available  
+            This release works with Hadoop 3.x.y. You can look at the complete JIRA change log for this release.
+                http://hive.apache.org/downloads.html
+                    https://www-us.apache.org/dist/hive/
+                        https://www-us.apache.org/dist/hive/hive-3.1.1/
+    2. 下载 MySQL  MySQL 安装使用离线安装方式 
+        https://dev.mysql.com/downloads/mysql/
+           选择为Red Hat Enterprise Linux 7 / Oracle Linux 7 ，把os的版本选择为all。 
+           下载mysql-5.7.21-1.el7.x86_64.rpm-bundle.tar，所有的rpm包都在里面。
+                mysql-5.7.21-1.el7.x86_64.rpm-bundle.tar
+        /*
+            RPM文件在Linux系统中的安装最为简便
+            RPM : Red-Hat Package Manager（RPM软件包管理器）
+                其原始设计理念是开放式的
+                现在包括OpenLinux、S.u.S.E.以及Turbo Linux等Linux的分发版本都采用, 是公认的行业标准. 
+            rpm 命令：遵循GPL协议且功能强大的包管理，可以建立、安装、请求、确认、和卸载软件包
+                常见参数:
+                    -e 卸载rpm包
+                    -q 查询已安装的软件信息
+                    -i 安装rpm包
+                    -u 升级rpm包
+                    --replacepkgs 重新安装rpm包
+                    --justdb 升级数据库，不修改文件系统
+                    --percent 在软件包安装时输出百分比
+                    --help 帮助
+                    --version 显示版本信息
+                    -c 显示所有配置文件
+                    -d 显示所有文档文件
+                    -h 显示安装进度
+                    -l 列出软件包中的文件
+                    -a 显示出文件状态
+                    -p 查询/校验一个软件包文件
+                    -v 显示详细的处理信息
+                    --dump 显示基本文件信息
+                    --nomd5 不验证文件的md5支持
+                    --nofiles 不验证软件包中的文件
+                    --nodeps 不验证软件包的依赖关系
+                    --whatrequires 查询/验证需要一个依赖性的软件包
+                    --whatprovides 查询/验证提供一个依赖性的软件包
+                举例: 
+                    1. 安装:
+                        rpm －i xxx.rpm
+                    2. 卸载:
+                        rpm -e <package name>
+                        rpm －e xxx 
+                    3. 此外: 
+                        -vh：显示安装进度；
+                        -u：升级软件包；
+                        -qpl：列出RPM软件包内的文件信息；
+                        -qpi：列出RPM软件包的描述信息；
+                        -qf：查找指定文件属于哪个RPM软件包；
+                        -va：校验所有的RPM软件包，查找丢失的文件；
+                        -qa: 查找相应文件，如 rpm -qa mysql
+        */
+    3. 下载 ConnectorJ
+        https://dev.mysql.com/downloads/connector/
+            https://dev.mysql.com/downloads/connector/j/
+                https://dev.mysql.com/downloads/file/?id=476197
+                    mysql-connector-java-5.1.46.tar.gz)
+        注意版本！
+   更改 ip 地址  hosts ip映射文件
+2. 安装 Hive  (master)
+    0. 安装 MySQL  su - root 
+        https://blog.csdn.net/qq_17776287/article/details/53536761
+        Centos7将默认数据库mysql替换成了Mariadb，需要先删除再安装。
+        1. 删除 Mariadb 
+            查询是否安装了 Mariadb 
+                rpm -qa|grep mariadb  // 查询出来已安装的mariadb 
+                或者
+                yum list installed | grep mysql     // 查询是否安装了 mysql 
+                yum list installed | grep mariadb   // 查询是否安装了 mariadb
+            卸载 Mariadb 
+                rpm -e --nodeps 文件名  // 卸载mariadb，文件名为rpm -qa查询出来的文件
+                    // --nodeps: 
+                    // 卸载但不删除所依赖的库 nodeps=no depends
+                    // 忽略依赖关系的卸载可能会导致系统中其它的一些软件无法使用
+                    // --force就是强制安装，如装过这个rpm的版本1，如果想装这个rpm的版本2，就需要用--force强制安装
+                或者 
+                yum -y remove 文件名   // 卸载mariadb，文件名为yum list installed查询出来的文件
+                    == yum -y remove mariadb-libs.x86_64
+                
+            == rpm -e --nodeps mariadb-libs
+            删除etc目录下的my.cnf
+                rm /etc/my.cnf 
+                find / -name my.cnf   // 全盘查找是否已有MySQL的配置文件？
+        2. 创建 mysql 组和用户
+            groupadd mysql 
+            useradd -g mysql mysql
+        3. 复制下载的mysql-5.7.21-1.el7.x86_64.rpm-bundle.tar 到 home/icss/software 
+        4. 解压 mysql-5.7.21-1.el7.x86_64.rpm-bundle.tar 文件
+                cd /home/icss/software/
+                tar -xvf mysql-5.7.21-1.el7.x86_64.rpm-bundle.tar
+                // tar 解压到指定目录
+                // 语法： 
+                    tar -xvf tar文件名 -C 目录名      -- 目录名要首先创建
+                    /**
+                        cd /home/icss/software/
+                        mkdir mysql5
+                        tar xvf mysql-5.7.21-1.el7.x86_64.rpm-bundle.tar -C mysql5
+                        cd mysql5 
+                        ls 
+                    **/
+             所有文件：
+                mysql-5.7.21-1.el7.x86_64.rpm-bundle.tar
+                mysql-community-client-5.7.21-1.el7.x86_64.rpm
+                mysql-community-common-5.7.21-1.el7.x86_64.rpm
+                mysql-community-devel-5.7.21-1.el7.x86_64.rpm
+                mysql-community-embedded-5.7.21-1.el7.x86_64.rpm
+                mysql-community-embedded-compat-5.7.21-1.el7.x86_64.rpm
+                mysql-community-embedded-devel-5.7.21-1.el7.x86_64.rpm
+                mysql-community-libs-5.7.21-1.el7.x86_64.rpm
+                mysql-community-libs-compat-5.7.21-1.el7.x86_64.rpm
+                mysql-community-minimal-debuginfo-5.7.21-1.el7.x86_64.rpm
+                mysql-community-server-5.7.21-1.el7.x86_64.rpm
+                mysql-community-server-minimal-5.7.21-1.el7.x86_64.rpm
+                mysql-community-test-5.7.21-1.el7.x86_64.rpm
+        5. 安装 MySQL 
+                安装通用基础核心组件
+            rpm -ivh mysql-community-common-5.7.21-1.el7.x86_64.rpm 
+                安装lib组件
+            rpm -ivh mysql-community-libs-5.7.21-1.el7.x86_64.rpm 
+                安装client组件
+            rpm -ivh mysql-community-client-5.7.21-1.el7.x86_64.rpm 
+                安装server组件
+            rpm -ivh mysql-community-server-5.7.21-1.el7.x86_64.rpm 
+        6. 设置 MySQL root 用户密码
+            == MySQL 5.6 安装后，root密码为空；5.7 安装后，root 不知道，所以需要重新设置。
+            1. 保证 mysqld.service 服务关闭
+                systemctl status mysqld.service  // 查看 mysqld 服务，保证是关闭的。 
+            2. 免密码登录 mysql 
+                gedit /etc/my.cnf
+                加入： 
+                    # Disabling symbolic-links is recommended to prevent assorted security risks
+                    skip-grant-tables  # 加入此句, 可以保证以 root 用户登录mysql, 不需要密码
+                    symbolic-links=0    # 原先就有这句话, 就是为了表示要放在这句话的前面
+            3. 启动 mysqld.service 服务
+                systemctl start mysqld.service
+            4. 以 root 用户登录(无密码)
+                mysql -u root -p    #输入命令回车进入，出现输入密码提示直接回车
+                    或者, 直接: mysql 也可以进入
+                出现：
+                    mysql>
+                输入: 
+                    mysql> desc mysql.user;     // 查看mysql数据库的user表中的表结构
+                    mysql> select host, user from mysql.user;       // 查看mysql数据库的user表的host和user字段
+            5. 改 root 密码
+                    mysql> set password for root@localhost = password('root');
+                    如果报错，输入：
+                    mysql> flush privileges;    #更新权限
+                    mysql> set password for root@localhost = password('root');  #设置密码为root
+                    mysql> flush privileges;     #再次更新权限
+                    mysql>quit;                 #退出
+                    或者： 
+                        use mysql; 
+                        update user set password=password('root') where user='root';
+            6. 停止 mysqld.service 服务
+                systemctl stop mysqld.service
+            7. 编辑 my.cnf 
+                gedit /etc/my.cnf
+                修改：
+                    # Disabling symbolic-links is recommended to prevent assorted security risks
+                    # skip-grant-tables # 注释掉这句话
+                    symbolic-links=0
+            8. 启动 mysqld.service 服务 
+                systemctl start mysqld.service
+            9. 测试 root/root 登录 mysql
+                mysql -u root -p    #输入命令回车进入，出现输入密码提示输入 root 回车 
+                在 mysql> 下 测试下： 
+                    show databases;
+                    use mysql;
+                    show tables;
+                    select * from user;
+                    desc user;  这句话查看表结构
+                    select user, host from user;
+                    quit;
+            10. 设置mysql开机自启
+                systemctl enable mysqld.service
+        7. mysql 相关目录和文件
+            a、数据库目录     /var/lib/mysql/ 
+            b、配置文件     /usr/share/mysql（mysql.server命令及配置文件） 
+            c、相关命令    /usr/bin(mysqladmin mysqldump等命令) 
+            d、启动脚本   /etc/rc.d/init.d/（启动脚本文件mysql的目录） 
+            1. 配置文件：/etc/my.cnf
+            2. 日志文件：//var/log/mysqld.log
+            3. 服务启动脚本：/usr/lib/systemd/system/mysqld.service
+            4. socket文件：/var/run/mysqld/mysqld.pid
+             
+        8. 查看并设置 mysql 
+            看端口： 
+                检测 3306 端口是否打开：
+                netstat -ntlp  | grep 3306
+                或者：
+                netstat -nat
+                    netstat -nat | grep 3306
+                或者： 
+                netstat -anp | more
+                netstat -anp | grep 3306
+            看 socket 
+                find / -name mysql.sock | more
+            看引擎：
+                mysql> show engines;        #看mysql支持哪些存储引擎, 关注其中的 DEFAULT  这个敲不通
+                mysql> show variables like '%storage_engine%';  #看mysql当前默认的存储引擎 
+            看字符集：
+                mysql> show variables like '%character%';
+                    +--------------------------+----------------------------+
+                    | Variable_name            | Value                      |
+                    +--------------------------+----------------------------+
+                    | character_set_client     | utf8                       |
+                    | character_set_connection | utf8                       |
+                    | character_set_database   | latin1 !!!                 |
+                    | character_set_filesystem | binary                     |
+                    | character_set_results    | utf8                       |
+                    | character_set_server     | latin1 !!!                 |
+                    | character_set_system     | utf8                       |
+                    | character_sets_dir       | /usr/share/mysql/charsets/ |
+                    +--------------------------+----------------------------+
+            看大小写名：
+                mysql> show variables like 'low%';
+            编辑 /etc/my.cnf 加入： 
+                [mysql]
+                # ！！设置mysql客户端默认字符集
+                default-character-set=utf8
+                # ！！
+                socket=/var/lib/mysql/mysql.sock
+                [mysqld]
+                # 后面设置了, 此处注释, 也可以保留
+                #datadir=/var/lib/mysql 
+                # ！！禁用DNS解析，加快远程连接的速度
+                # https://blog.csdn.net/moqiang02/article/details/21631729
+                # https://www.cnblogs.com/ivictor/p/5311607.html
+                skip-name-resolve
+                #设置3306端口
+                port=3306
+                socket=/var/lib/mysql/mysql.sock
+                # 设置mysql的安装目录, 和此种安装方式的默认目录不同,不需要!
+                # basedir=/usr/local/mysql
+                # 设置mysql数据库的数据的存放目录, 重复了, 可以不重新设置, 设置了有可能报错. 
+                #datadir=/usr/local/mysql/data
+                # 允许最大连接数
+                max_connections=200
+                # ！！服务端使用的字符集默认为8比特编码的latin1字符集
+                character-set-server=utf8
+                # 创建新表时将使用的默认存储引擎， 也可以注释掉，因为本来就是默认的engine
+                default-storage-engine=INNODB
+                # 表名在硬盘上以小写保存，名称比较对大小写不敏感。
+                # https://blog.csdn.net/jesseyoung/article/details/40617031
+                lower_case_table_names=1
+                # ！！限制server接受的数据包大小，大的插入和更新会被max_allowed_packet 参数限制掉，导致失败。
+                max_allowed_packet=16M
+            重启 mysql 服务
+            systemctl restart mysqld.service
+                mysql> show variables like '%character%';
+                    +--------------------------+----------------------------+
+                    | Variable_name            | Value                      |
+                    +--------------------------+----------------------------+
+                    | character_set_client     | utf8                       |
+                    | character_set_connection | utf8                       |
+                    | character_set_database   | utf8 !!!                   |
+                    | character_set_filesystem | binary                     |
+                    | character_set_results    | utf8                       |
+                    | character_set_server     | utf8 !!!                   |
+                    | character_set_system     | utf8                       |
+                    | character_sets_dir       | /usr/share/mysql/charsets/ |
+                    +--------------------------+----------------------------+
+        9. 添加用户，并保证可以远程登录
+            看策略：
+                mysql> show variables like '%password%';
+            改策略： 
+                gedit /etc/my.cnf
+                # 不需要密码策略，禁用
+                validate_password = off
+
+                systemctl restart mysqld    #重新启动mysql服务使配置生效
+            然后在 mysql> 下执行： grant 会有警告， 正常。 
+            GRANT ALL PRIVILEGES ON *.* TO 'icss'@'%' IDENTIFIED BY 'icss' WITH GRANT OPTION;
+            GRANT ALL PRIVILEGES ON *.* TO 'icss'@'localhost' IDENTIFIED BY 'icss' WITH GRANT OPTION;
+            GRANT ALL PRIVILEGES ON *.* TO 'icss'@'master' IDENTIFIED BY 'icss' WITH GRANT OPTION;
+            GRANT ALL PRIVILEGES ON *.* TO 'icss'@'master.hadoop' IDENTIFIED BY 'icss' WITH GRANT OPTION;
+            FLUSH PRIVILEGES;
+                use mysql
+                select user, host from user;
+        10. 验证：
+            mysql -uicss -p
+                密码输入 icss 
+            create database hive;   //创建 hive 数据库
+
+    1. 安装、配置、启动 hive  su - icss
+        https://blog.csdn.net/jssg_tzw/article/details/72354470
+        https://www.cnblogs.com/junle/p/6347637.html
+        https://www.cnblogs.com/garfieldcgf/p/8134452.html
+        0. 说明： 
+            安装hive前提是要先安装hadoop集群
+            hive只需要在hadoop的namenode节点集群里安装即可(需要再所有namenode上安装)  这句话备 子机器可以先不用装
+                可以不在datanode节点的机器上安装
+            启动hive的前提是需要hadoop在正常运行的
+        1. 复制 apache-hive-3.1.1-bin.tar.gz 到 icss 主目录下 software 文件夹
+        2. 解压到 icss 主目录下
+            mv apache-hive-3.1.1-bin.tar.gz ~/
+            tar -xzvf apache-hive-3.1.1-bin.tar.gz 
+            rm apache-hive-3.1.1-bin.tar.gz
+            // 或者： 将 software/ 下的apache-hive-3.1.1-bin.tar.gz解压到 ~/hive3 目录下
+                cd 
+                cd software/
+                mkdir ~/hive3
+                tar -xzvf apache-hive-3.1.1-bin.tar.gz -C ~/hive3
+                cd 
+                cd hive3/apache-hive-3.1.1-bin
+                mv * ../
+                cd ..
+                rm -r apache-hive-3.1.1-bin/
+        3. 配置 hive
+            1. 配环境变量：
+                gedit .bash_profile
+                加入： 
+                    export HIVE_HOME=$PWD/hive3
+                    export HIVE_CONF_DIR=$HIVE_HOME/conf
+                    export PATH=$HIVE_HOME/bin:$PATH
+                == source .bash_profile
+            2. 配置 hive-site.xml 文件
+            在hive3/conf下复制hive-default.xml.template
+                生成hive-site.xml并修改配置信息：
+            cd 
+            cd hive3/conf
+            cp hive-default.xml.template hive-site.xml
+            gedit hive-site.xml
+            /*
+            #进入目录
+            cd $HIVE_CONF_DIR
+            #拷贝hive-default.xml.template并重命名为hive-site.xml
+            cp hive-default.xml.template  hive-site.xml
+            #编辑hive-site.xml
+            gedit hive-site.xml
+            */
+            修改： 
+                1. 修改hive-site.xml数据库相关的配置 4处！！
+                    1. javax.jdo.option.ConnectionDriverName，给出MySQL驱动类
+                        <property
+                          <name>javax.jdo.option.ConnectionDriverName</name
+                          <value>com.mysql.jdbc.Driver</value>
+                        </property> 
+                    == 将MySQL驱动包上载到Hive的lib目录下 $HIVE_HOME/lib/
+                        mysql-connector-java-5.1.46-bin.jar
+                    2. javax.jdo.option.ConnectionURL，改为MySQL的地址
+                        <property>
+                            <name>javax.jdo.option.ConnectionURL</name>
+                            <value>jdbc:mysql://master:3306/hive?createDatabaseIfNotExist=true</value>
+                        </property>
+                    3. javax.jdo.option.ConnectionUserName，改为MySQL数据库登录名
+                        <property>
+                            <name>javax.jdo.option.ConnectionUserName</name>
+                            <value>icss</value>
+                        </property>
+                    4. javax.jdo.option.ConnectionPassword，改为MySQL数据库的登录密码
+                        <property>
+                            <name>javax.jdo.option.ConnectionPassword</name>
+                            <value>icss</value>
+        /                </property>
+                2. 修改hive-site.xml中的${system:java.io.tmpdir}为自己的目录 4处！！
+                    0. 创建临时目录， 并赋权
+                        cd $HIVE_HOME
+                        mkdir iotmp
+                        chmod -R 777 iotmp/
+                    1. hive.exec.local.scratchdir
+                        Hive的参数hive.exec.scratchdir所配置的路径为hive执行sql的临时文件的存放路径
+                        原来：
+                        <property>
+                            <name>hive.exec.local.scratchdir</name>
+                            <value>${system:java.io.tmpdir}/${system:user.name}</value>
+                        </property>
+                        改为：
+                        <property>
+                            <name>hive.exec.local.scratchdir</name>
+                            <value>/home/icss/hive3/iotmp</value>
+                        </property>
+                    2. hive.downloaded.resources.dir
+                        说明：${hive.session.id}
+                            当前会话的标识符，格式为“用户名_时间”用于记录在 job conf 中，
+                            一般不予以手动设置
+                        原来：
+                        <property>
+                            <name>hive.downloaded.resources.dir</name>
+                            <value>${system:java.io.tmpdir}/${hive.session.id}_resources</value>
+                        </property>
+                        改为：
+                        <property>
+                            <name>hive.downloaded.resources.dir</name>
+                            <value>
+                            /home/icss/hive3/iotmp/${hive.session.id}_resources
+                            </value>
+                        </property>
+                    3. hive.querylog.location
+                        原来：
+                        <property>
+                            <name>hive.querylog.location</name>
+                            <value>${system:java.io.tmpdir}/${system:user.name}</value>
+                        </property>
+                        改为：
+                        <property>
+                            <name>hive.querylog.location</name>
+                            <value>/home/icss/hive3/iotmp</value>
+                        </property>
+                    4. hive.server2.logging.operation.log.location
+                        原来：
+                        <property>
+                            <name>hive.server2.logging.operation.log.location</name>
+                            <value>${system:java.io.tmpdir}/${system:user.name}/operation_logs</value>
+                        </property>
+                        改为：/home/icss/hive3/iotmp
+                        <property>
+                            <name>hive.server2.logging.operation.log.location</name>
+                            <value>/home/icss/hive3/iotmp/operation_logs</value>
+                        </property>
+                3. 看hdfs目录， 并创建
+                        查 /hive 4 处！！
+                        <name>hive.exec.scratchdir</name>
+                        <value>/tmp/hive</value>
+                        === 
+                        <name>hive.repl.rootdir</name>
+                        <value>/user/hive/repl/</value>
+                        === 
+                        <name>hive.repl.cmrootdir</name>
+                        <value>/user/hive/cmroot/</value>
+                        === 
+                        <name>hive.metastore.warehouse.dir</name>
+                        <value>/user/hive/warehouse</value>
+                    ==  启动 hadoop，在hdfs 中创建相应的目录，并赋予权限。
+                        start-dfs.sh 
+                        hadoop fs -mkdir -p  /user/hive/warehouse       #创建目录
+                        hadoop fs -chmod -R 777 /user/hive/warehouse    #新建的目录赋予读写权限
+                        hadoop fs -mkdir -p /tmp/hive                   #新建/tmp/hive/目录
+                        hadoop fs -chmod -R 777 /tmp/hive               #目录赋予读写权限
+                        == 
+                        hadoop fs -mkdir -p /user/hive/repl
+                        hadoop fs -chmod -R 777 /user/hive/repl
+                        hadoop fs -mkdir -p /user/hive/cmroot
+                        hadoop fs -chmod -R 777 /user/hive/cmroot
+                        hadoop fs -mkdir -p /user/hive/log
+                        hadoop fs -chmod -R 777 /user/hive/log
+            3. 配置 hive-env.sh 文件
+                cd
+                cd $HIVE_CONF_DIR
+                cp hive-env.sh.template hive-env.sh
+                gedit hive-env.sh
+                加入：
+                    [export 好像没有] HADOOP_HOME=/home/icss/hadoop3
+                    export HIVE_CONF_DIR=/home/icss/hive3/conf
+                    export HIVE_AUX_JARS_PATH=/home/icss/hive3/lib
+                        
+        4. 启动 hive
+            0. 启动 hadoop 
+                start-all.sh 
+                    其实， 启动 start-dfs.sh 即可
+            1. 数据库初始化 
+                cd 
+                #对数据库进行初始化 : 可能因为 hive-site.xml 出现乱码报错（删除其中的乱码即可）
+                schematool -initSchema -dbType mysql
+                == 进入 mysql 
+                    mysql -uicss -p
+                        icss 
+                    mysql> use hive
+                    mysql> show tables;
+                        一堆表
+                    mysql> desc VERSION;    #大小写敏感的！！
+                    mysql> desc version
+            2. 运行
+                cd 
+                hive 
+        /*
+        1. MySQL 是否正常运行
+        2. 创建好mysql 用户并分配好相应的访问权限以及数据库端口号等
+        3.   mysql-connector-java-5.1.26-bin.jar  是否放到hive/lib 目录下 建议修改权限为777 （chmod 777 mysql-connector-java-5.1.26-bin.jar）
+        4. 修改conf/hive-site.xml 中的 “hive.metastore.schema.verification”  值为 false  即可解决 “Caused by: MetaException(message:Version information not found in metastore. )” 
+        5. 调试 模式命令  hive -hiveconf hive.root.logger=DEBUG,console
+        */
+    2. 简单 hive 操作     
+        1. show functions;  # 显示所有的函数
+        2. quit; 或者 exit;  # 退出hive 
+        
+        
+
+hive.metastore.local 1.x后的版本不再需要。 
+
+Hive 优化以及参数配置
+    https://blog.csdn.net/shujuwangzi/article/details/45193069
+    
+hive-stie.xml 常用参数说明
+    https://blog.csdn.net/wisgood/article/details/19768125
+
+hive.exec.mode.local.auto    
+
+决定 Hive 是否应该自动地根据输入文件大小，在本地运行（在GateWay运行）    
+
+默认值：true       
+
+hive.exec.mode.local.auto.inputbytes.max    
+
+如果 hive.exec.mode.local.auto 为 true，当输入文件大小小于此阈值时可以自动在本地模式运行，默认是 128兆。    
+
+默认值：134217728L       
+
+hive.exec.mode.local.auto.tasks.max    
+
+如果 hive.exec.mode.local.auto 为 true，当 Hive Tasks（Hadoop Jobs）小于此阈值时，可以自动在本地模式运行。    
+
+默认值：4       
+
+hive.auto.convert.join    
+
+是否根据输入小表的大小，自动将 Reduce 端的 Common Join 转化为 Map Join，从而加快大表关联小表的 Join 速度。    
+
+默认值：false       
+
+hive.mapred.local.mem    
+
+Mapper/Reducer 在本地模式的最大内存量，以字节为单位，0为不限制。    
+
+默认值：0       
+
+mapred.reduce.tasks    
+
+所提交 Job 的 reduer 的个数，使用 Hadoop Client 的配置。       
+
+默认值：1 
+
+hive.exec.scratchdir    
+
+HDFS路径，用于存储不同 map/reduce 阶段的执行计划和这些阶段的中间输出结果。    
+
+默认值：/tmp/&lt;user.name&gt;/hive       
+
+hive.metastore.warehouse.dir    
+
+Hive 默认的数据文件存储路径，通常为 HDFS 可写的路径。    
+
+默认值："       
+
+hive.groupby.skewindata    
+
+决定 group by 操作是否支持倾斜的数据。    
+
+默认值：false       
+
+hive.merge.mapfiles    
+
+是否开启合并 Map 端小文件，对于 Hadoop 0.20 以前的版本，起一首新的 Map/Reduce Job，对于 0.20 以后的版本，则是起使用 CombineInputFormat 的 MapOnly Job。    
+
+默认值：true       
+
+hive.merge.mapredfiles    
+
+是否开启合并 Map/Reduce 小文件，对于 Hadoop 0.20 以前的版本，起一首新的 Map/Reduce Job，对于 0.20 以后的版本，则是起使用 CombineInputFormat 的 MapOnly Job。    
+
+默认值：false       
+
+hive.default.fileformat    
+
+Hive 默认的输出文件格式，与创建表时所指定的相同，
+
+可选项为 'TextFile' 、 'SequenceFile' 或者 'RCFile'。     'TextFile'       
+
+hive.mapred.mode    
+
+Map/Redure 模式，如果设置为 strict，将不允许笛卡尔积。    
+
+默认值： 'nonstrict'       
+
+hive.exec.parallel    
+
+是否开启 map/reduce job的并发提交。   
+
+默认值：  false       
+
+hive.security.authorization.enabled    
+
+Hive 是否开启权限认证。    
+
+默认值：false       
+
+hive.exec.plan    
+
+Hive 执行计划的路径，会在程序中自动进行设置    
+
+默认值：null       
+
+hive.exec.submitviachild    
+
+决定 map/reduce Job 是否应该使用各自独立的 JVM 进行提交（Child进程），默认情况下，使用与 HQL compiler 相同的 JVM 进行提交。    
+
+默认值：false       
+
+hive.exec.script.maxerrsize    
+
+通过 TRANSFROM/MAP/REDUCE 所执行的用户脚本所允许的最大的序列化错误数。    
+
+默认值：100000       
+
+hive.exec.script.allow.partial.consumption    
+
+是否允许脚本只处理部分数据，如果设置为 true ，因 broken pipe 等造成的数据未处理完成将视为正常。    
+
+默认值：false       
+
+hive.exec.compress.output    
+
+决定查询中最后一个 map/reduce job 的输出是否为压缩格式。    
+
+默认值：false       
+
+hive.exec.compress.intermediate    
+
+决定查询的中间 map/reduce job （中间 stage）的输出是否为压缩格式。    
+
+默认值：false       
+
+hive.intermediate.compression.codec    
+
+中间 map/reduce job 的压缩编解码器的类名（一个压缩编解码器可能包含多种压缩类型），该值可能在程序中被自动设置。            
+
+hive.intermediate.compression.type    
+
+中间 map/reduce job 的压缩类型，如 "BLOCK" "RECORD"。        
+
+hive.exec.reducers.bytes.per.reducer    
+
+每一个 reducer 的平均负载字节数。    
+
+默认值：1000000000       
+
+hive.exec.reducers.max    
+
+reducer 个数的上限。    
+
+默认值：999       
+
+hive.exec.pre.hooks    
+
+语句层面，整条 HQL 语句在执行前的 hook 类名。    
+
+默认值："       
+
+hive.exec.post.hooks    
+
+语句层面，整条 HQL 语句在执行完成后的 hook 类名。            
+
+hive.exec.parallel.thread.number    
+
+并发提交时的并发线程的个数。    
+
+默认值：8       
+
+hive.mapred.reduce.tasks.speculative.execution    
+
+是否开启 reducer 的推测执行，与 mapred.reduce.tasks.speculative.execution 作用相同。    
+
+默认值：false       
+
+hive.exec.counters.pull.interval    
+
+客户端拉取 progress counters 的时间，以毫秒为单位。    
+
+默认值：1000L       
+
+hive.exec.dynamic.partition    
+
+是否打开动态分区。    
+
+默认值：false       
+
+hive.exec.dynamic.partition.mode    
+
+打开动态分区后，动态分区的模式，有 strict 和 nonstrict 两个值可选，strict 要求至少包含一个静态分区列，nonstrict 则无此要求。    
+
+默认值：strict       
+
+hive.exec.max.dynamic.partitions    
+
+所允许的最大的动态分区的个数。    
+
+默认值：1000       
+
+hive.exec.max.dynamic.partitions.pernode    
+
+单个 reduce 结点所允许的最大的动态分区的个数。    
+
+默认值：100       
+
+hive.exec.default.partition.name    
+
+默认的动态分区的名称，当动态分区列为''或者null时，使用此名称。''     '__HIVE_DEFAULT_PARTITION__'       
+
+hadoop.bin.path    
+
+Hadoop Client 可执行脚本的路径，该路径用于通过单独的 JVM 提交 job，使用 Hadoop Client 的配置。    
+
+默认值：$HADOOP_HOME/bin/hadoop       
+
+hadoop.config.dir    
+
+Hadoop Client 配置文件的路径，使用 Hadoop Client 的配置。    
+
+默认值：$HADOOP_HOME/conf       
+
+fs.default.name    
+
+Namenode 的 URL，使用 Hadoop Client 的配置。    
+
+默认值：file:///       
+
+map.input.file    
+
+Map 的输入文件，使用 Hadoop Client 的配置。   
+
+默认值：null       
+
+mapred.input.dir    
+
+Map 的输入目录，使用 Hadoop Client 的配置。    
+
+默认值： null       
+
+mapred.input.dir.recursive    
+
+输入目录是否可递归嵌套，使用 Hadoop Client 的配置。    
+
+默认值：false       
+
+mapred.job.tracker    
+
+Job Tracker 的 URL，使用 Hadoop Client 的配置，如果这个配置设置为 'local'，将使用本地模式。    
+
+默认值：local       
+
+mapred.job.name    
+
+ Map/Reduce 的 job 名称，如果没有设置，则使用生成的 job name，使用 Hadoop Client 的配置。    
+
+默认值：null       
+
+mapred.reduce.tasks.speculative.execution    
+
+Map/Reduce 推测执行，使用 Hadoop Client 的配置。    
+
+默认值：null       
+
+hive.metastore.metadb.dir    
+
+Hive 元数据库所在路径。    
+
+默认值："       
+
+hive.metastore.uris    
+
+Hive 元数据的 URI，多个 thrift://地址，以英文逗号分隔。    
+
+默认值："       
+
+hive.metastore.connect.retries    
+
+连接到 Thrift 元数据服务的最大重试次数。    
+
+默认值：3       
+
+javax.jdo.option.ConnectionPassword    
+
+JDO 的连接密码。    
+
+默认值："       
+
+hive.metastore.ds.connection.url.hook    
+
+JDO 连接 URL Hook 的类名，该 Hook 用于获得 JDO 元数据库的连接字符串，为实现了 JDOConnectionURLHook 接口的类。    
+
+默认值："       
+
+javax.jdo.option.ConnectionURL    
+
+元数据库的连接 URL。    
+
+默认值："       
+
+hive.metastore.ds.retry.attempts    
+
+当没有 JDO 数据连接错误后，尝试连接后台数据存储的最大次数。    
+
+默认值：1       
+
+hive.metastore.ds.retry.interval    
+
+每次尝试连接后台数据存储的时间间隔，以毫秒为单位。    
+
+默认值：1000       
+
+hive.metastore.force.reload.conf    
+
+是否强制重新加载元数据配置，一但重新加载，该值就会被重置为 false。    
+
+默认值：false       
+
+hive.metastore.server.min.threads    
+
+Thrift 服务线程池的最小线程数。    
+
+ 默认值：8       
+
+hive.metastore.server.max.threads    
+
+Thrift 服务线程池的最大线程数。    
+
+默认值：0x7fffffff       
+
+hive.metastore.server.tcp.keepalive    
+
+Thrift 服务是否保持 TCP 连接。    
+
+默认值：true       
+
+hive.metastore.archive.intermediate.original    
+
+用于归档压缩的原始中间目录的后缀，这些目录是什么并不重要，只要能够避免冲突即可。    
+
+默认值：'_INTERMEDIATE_ORIGINAL'       
+
+hive.metastore.archive.intermediate.archived    
+
+用于归档压缩的压缩后的中间目录的后缀，这些目录是什么并不重要，只要能够避免冲突即可。    
+
+默认值：'_INTERMEDIATE_ARCHIVED'       
+
+hive.metastore.archive.intermediate.extracted    
+
+用于归档压缩的解压后的中间目录的后缀，这些目录是什么并不重要，只要能够避免冲突即可。    
+
+默认值：'_INTERMEDIATE_EXTRACTED'       
+
+hive.cli.errors.ignore    
+
+是否忽略错误，对于包含多的 SQL 文件，可以忽略错误的行，继续执行下一行。    
+
+默认值：false       
+
+hive.session.id    
+
+当前会话的标识符，格式为“用户名_时间”用于记录在 job conf 中，一般不予以手动设置。    
+
+默认值："       
+
+hive.session.silent    
+
+当前会话是否在 silent 模式运行。 如果不是 silent 模式，所以 info 级打在日志中的消息，都将以标准错误流的形式输出到控制台。   
+
+默认值：false       
+
+hive.query.string    
+
+当前正在被执行的查询字符串。    
+
+默认值："       
+
+hive.query.id    
+
+当前正在被执行的查询的ID。    
+
+默认值： "       
+
+hive.query.planid    
+
+当前正在被执行的 map/reduce plan 的 ID。    
+
+默认值： "       
+
+hive.jobname.length    
+
+当前 job name 的最大长度，hive 会根据此长度省略 job name 的中间部分。    
+
+默认值：50       
+
+hive.jar.path    
+
+通过单独的 JVM 提交 job 时，hive_cli.jar 所在的路径    
+
+默认值："       
+
+hive.aux.jars.path    
+
+各种由用户自定义 UDF 和 SerDe 构成的插件 jar 包所在的路径。    
+
+默认值："       
+
+hive.added.files.path    
+
+ADD FILE 所增加的文件的路径。    
+
+默认值："       
+
+hive.added.jars.path    
+
+ADD JAR 所增加的文件的路径。    
+
+默认值： "       
+
+hive.added.archives.path    
+
+ADD ARCHIEVE 所增加的文件的路径。    
+
+默认值："       
+
+hive.table.name    
+
+当前的 Hive 表的名称，该配置将通过 ScirptOperator 传入到用户脚本中。    
+
+默认值："       
+
+hive.partition.name    
+
+当前的 Hive 分区的名称，该配置将通过 ScriptOperator 传入到用户脚本中。    
+
+默认值："       
+
+hive.script.auto.progress    
+
+脚本是否周期性地向 Job Tracker 发送心跳，以避免脚本执行的时间过长，使 Job Tracker 认为脚本已经挂掉了。    
+
+默认值：false       
+
+hive.script.operator.id.env.var    
+
+用于识别 ScriptOperator ID 的环境变量的名称。    
+
+默认值：'HIVE_SCRIPT_OPERATOR_ID'       
+
+hive.alias    
+
+当前的 Hive 别名，该配置将通过 ScriptOpertaor 传入到用户脚本中。    
+
+默认值："       
+
+hive.map.aggr    
+
+决定是否可以在 Map 端进行聚合操作    
+
+默认值：true       
+
+hive.join.emit.interval    
+
+Hive Join 操作的发射时间间隔，以毫秒为单位。    
+
+默认值：1000       
+
+hive.join.cache.size    
+
+Hive Join 操作的缓存大小，以字节为单位。    
+
+默认值：25000       
+
+hive.mapjoin.bucket.cache.size    
+
+Hive Map Join 桶的缓存大小，以字节为单位。    
+
+默认值：100       
+
+hive.mapjoin.size.key    
+
+Hive Map Join 每一行键的大小，以字节为单位。    
+
+默认值：10000       
+
+hive.mapjoin.cache.numrows    
+
+Hive Map Join 所缓存的行数。    
+
+默认值：25000       
+
+hive.groupby.mapaggr.checkinterval    
+
+对于 Group By 操作的 Map 聚合的检测时间，以毫秒为单位。    
+
+默认值：100000       
+
+hive.map.aggr.hash.percentmemory    
+
+Hive Map 端聚合的哈稀存储所占用虚拟机的内存比例。    
+
+默认值：0.5       
+
+hive.map.aggr.hash.min.reduction    
+
+Hive Map 端聚合的哈稀存储的最小 reduce 比例。    
+
+默认值：0.5       
+
+hive.udtf.auto.progress    
+
+Hive UDTF 是否周期性地报告心跳，当 UDTF 执行时间较长且不输出行时有用。    
+
+默认值：false       
+
+hive.fileformat.check    
+
+Hive 是否检查输出的文件格式。    
+
+默认值：true       
+
+hive.querylog.location    
+
+Hive 实时查询日志所在的目录，如果该值为空，将不创建实时的查询日志。    
+
+默认值：'/tmp/$USER'       
+
+hive.script.serde    
+
+Hive 用户脚本的 SerDe。    
+
+默认值：'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe'       
+
+hive.script.recordreader    
+
+Hive 用户脚本的 RecordRedaer。    
+
+默认值：'org.apache.hadoop.hive.ql.exec.TextRecordReader'       
+
+hive.script.recordwriter    
+
+Hive 用户脚本的 RecordWriter。    
+
+默认值：'org.apache.hadoop.hive.ql.exec.TextRecordWriter'       
+
+hive.hwi.listen.host    
+
+HWI 所绑定的 HOST 或者 IP。    
+
+默认值：'0.0.0.0'       
+
+hive.hwi.listen.port    
+
+HWI 所监听的 HTTP 端口。    
+
+默认值：9999       
+
+hive.hwi.war.file    
+
+HWI 的 war 文件所在的路径。    
+
+默认值：$HWI_WAR_FILE       
+
+hive.test.mode    
+
+是否以测试模式运行 Hive    
+
+默认值：false       
+
+hive.test.mode.prefix    
+
+Hive 测试模式的前缀。    
+
+默认值：'test_'       
+
+hive.test.mode.samplefreq    
+
+Hive 测试模式取样的频率，即每秒钟取样的次数。    
+
+默认值：32       
+
+hive.test.mode.nosamplelist    
+
+Hive 测试模式取样的排除列表，以逗号分隔。    
+
+默认值："       
+
+hive.merge.size.per.task    
+
+每个任务合并后文件的大小，根据此大小确定 reducer 的个数，默认 256 M。    
+
+默认值：256000000       
+
+hive.merge.smallfiles.avgsize    
+
+需要合并的小文件群的平均大小，默认 16 M。    
+
+默认值：16000000       
+
+hive.optimize.skewjoin    
+
+是否优化数据倾斜的 Join，对于倾斜的 Join 会开启新的 Map/Reduce Job 处理。    
+
+默认值：false       
+
+hive.skewjoin.key     倾斜键数目阈值，超过此值则判定为一个倾斜的 Join 查询。    
+
+默认值： 1000000       
+
+hive.skewjoin.mapjoin.map.tasks    
+
+处理数据倾斜的 Map Join 的 Map 数上限。    
+
+默认值： 10000       
+
+hive.skewjoin.mapjoin.min.split    
+
+处理数据倾斜的 Map Join 的最小数据切分大小，以字节为单位，默认为32M。    
+
+默认值：33554432       
+
+mapred.min.split.size    
+
+Map Reduce Job 的最小输入切分大小，与 Hadoop Client 使用相同的配置。    
+
+默认值：1       
+
+hive.mergejob.maponly    
+
+是否启用 Map Only 的合并 Job。    
+
+默认值：true       
+
+hive.heartbeat.interval    
+
+ Hive Job 的心跳间隔，以毫秒为单位。    
+
+默认值：1000       
+
+hive.mapjoin.maxsize    
+
+Map Join 所处理的最大的行数。超过此行数，Map Join进程会异常退出。    
+
+默认值：1000000       
+
+hive.hashtable.initialCapacity    
+
+Hive 的 Map Join 会将小表 dump 到一个内存的 HashTable 中，该 HashTable 的初始大小由此参数指定。    
+
+默认值：100000       
+
+hive.hashtable.loadfactor    
+
+Hive 的 Map Join 会将小表 dump 到一个内存的 HashTable 中，该 HashTable 的负载因子由此参数指定。    
+
+ 默认值：0.75       
+
+hive.mapjoin.followby.gby.localtask.max.memory.usage    
+
+MapJoinOperator后面跟随GroupByOperator时，内存的最大使用比例    
+
+默认值：0.55       
+
+hive.mapjoin.localtask.max.memory.usage    
+
+Map Join 的本地任务使用堆内存的最大比例    
+
+默认值：0.9       
+
+hive.mapjoin.localtask.timeout    
+
+Map Join 本地任务超时，淘宝版特有特性    
+
+默认值：600000       
+
+hive.mapjoin.check.memory.rows    
+
+设置每多少行检测一次内存的大小，如果超过 hive.mapjoin.localtask.max.memory.usage 则会异常退出，Map Join 失败。    
+
+默认值：100000       
+
+hive.debug.localtask    
+
+是否调试本地任务，目前该参数没有生效    
+
+默认值：false       
+
+hive.task.progress    
+
+是否开启 counters ，以记录 Job 执行的进度，同时客户端也会拉取进度 counters。    
+
+默认值：false       
+
+hive.input.format    
+
+Hive 的输入 InputFormat。    
+
+默认是org.apache.hadoop.hive.ql.io.HiveInputFormat，
+
+其他还有org.apache.hadoop.hive.ql.io.CombineHiveInputFormat       
+
+hive.enforce.bucketing    
+
+是否启用强制 bucketing。    
+
+默认值：false       
+
+hive.enforce.sorting    
+
+是否启用强制排序。    
+
+默认值：false       
+
+hive.mapred.partitioner    
+
+Hive 的 Partitioner 类。    
+
+默认值：'org.apache.hadoop.hive.ql.io.DefaultHivePartitioner'       
+
+hive.exec.script.trust    
+
+Hive Script Operator For trust    
+
+默认值：false       
+
+hive.hadoop.supports.splittable.combineinputformat    
+
+是否支持可切分的 CombieInputFormat    
+
+默认值：false       
+
+hive.optimize.cp    
+
+是否优化列剪枝。    
+
+默认值：true       
+
+hive.optimize.ppd    
+
+是否优化谓词下推。    
+
+默认值：true       
+
+hive.optimize.groupby    
+
+是否优化 group by。    
+
+默认值：true       
+
+hive.optimize.bucketmapjoin    
+
+是否优化 bucket map join。    
+
+ 默认值：false       
+
+hive.optimize.bucketmapjoin.sortedmerge    
+
+ 
+
+是否在优化 bucket map join 时尝试使用强制 sorted merge bucket map join。    默认值：false       
+
+hive.optimize.reducededuplication    
+
+是否优化 reduce 冗余。    
+
+默认值：true       
+
+hive.hbase.wal.enabled    
+
+是否开启 HBase Storage Handler。    
+
+默认值：true       
+
+hive.archive.enabled    
+
+是否启用 har 文件。    
+
+默认值：false       
+
+hive.archive.har.parentdir.settable    
+
+是否启用 har 文件的父目录可设置。    
+
+默认值：false       
+
+hive.outerjoin.supports.filters    
+
+是否启动外联接支持过滤条件。    
+
+默认值：true       
+
+hive.fetch.output.serde    
+
+对于 Fetch Task 的 SerDe 类    
+
+默认值：'org.apache.hadoop.hive.serde2.DelimitedJSONSerDe'       
+
+hive.semantic.analyzer.hook    
+
+Hive 语义分析的 Hook，在语义分析阶段的前后被调用，用于分析和修改AST及生成的执行计划，以逗号分隔。    
+
+默认值：null       
+
+hive.cli.print.header    
+
+是否显示查询结果的列名，默认为不显示。    
+
+默认值：false       
+
+hive.cli.encoding    
+
+Hive 默认的命令行字符编码。    
+
+默认值：'UTF8'       
+
+hive.log.plan.progress    
+
+是否记录执行计划的进度。    
+
+默认值：true       
+
+hive.pull.progress.counters    
+
+是否从 Job Tracker 上拉取 counters，淘宝特有配置项。    
+
+ 默认值：true       
+
+hive.job.pre.hooks    
+
+每个 Job 提交前执行的 Hooks 列表，以逗号分隔，淘宝特有配置项。    
+
+默认值："       
+
+hive.job.post.hooks    
+
+每个 Job 完成后执行的 Hooks 列表，以逗号分隔，淘宝特有配置项。    
+
+默认值："       
+
+hive.max.progress.counters    
+
+Hive 最大的进度 couters 个数，淘宝特有配置项。    
+
+默认值：100       
+
+hive.exec.script.wrapper    
+
+Script Operator 脚本调用的封装，通常为脚本解释程序。例如，可以把该变量值的名称设置为"python"，那么传递到 Script Operator 的脚本将会以"python &lt;script command&gt;"的命令形式进行调用，如果这个值为null或者没有设置，那么该脚本将会直接以"&lt;script command&gt;"的命令形式调用。    
+
+默认值：null       
+
+hive.check.fatal.errors.interval    
+
+客户端通过拉取 counters 检查严重错误的周期，以毫秒为单位，淘宝特有配置项。    
+
+默认值：5000L
