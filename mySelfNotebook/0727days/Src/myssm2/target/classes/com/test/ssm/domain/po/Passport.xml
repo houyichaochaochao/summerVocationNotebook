@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.PassportDao">
+	<select id="getPeopleByPassportId" parameterType="int"
+		resultType="People">
+		select *
+		from Peoples
+		where passportId = #{id}
+	</select>
+
+	<resultMap type="Passport" id="GetPeople">
+		<id column="id" property="id" />
+		<result column="serialno" property="serialno" />
+		<result column="expire" property="expire" />
+		<association property="people" column="id"
+			select="getPeopleByPassportId" />
+	</resultMap>
+
+	<select id="findById" parameterType="int" resultMap="GetPeople">
+		select *
+		from Passports
+		where id = #{id}
+	</select>
+
+	<select id="findAll" resultMap="GetPeople">
+		select *
+		from Passports
+	</select>
+</mapper>

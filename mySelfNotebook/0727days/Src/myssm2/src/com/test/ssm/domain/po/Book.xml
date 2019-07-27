@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.BookDao">
+	<select id="byBooksId" parameterType="int" resultType="Author">
+        select `authors`.* 
+        FROM `authors`  INNER JOIN bookandauthor 
+        ON `authors`.id = bookandauthor.authorId 
+        where bookandauthor.bookId = #{bookId}
+	</select>
+
+	<select id="byPressId" parameterType="int" resultType="Press">
+		select * 
+		from Presses 
+		where id = #{pressId}
+	</select>
+
+	<resultMap type="Book" id="GetPressAndAuthors">
+		<id column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="isbn" property="isbn"/>
+		<association property="press" column="pressId" select = "byPressId"/>
+		<collection property="authors" ofType="Author" column="id" select="byBooksId"/>
+	</resultMap>
+
+	<select id="findById" parameterType="int" resultMap="GetPressAndAuthors">
+		select * 
+		from Books 
+		where id = #{id}
+	</select>
+	<select id="findAll" resultMap="GetPressAndAuthors">
+		select * 
+		from Books 
+	</select>
+</mapper>
+
+  
