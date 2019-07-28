@@ -1,4 +1,9 @@
 # summerVocationNotebook
+## 1、项目描述
+1. [mySelfNoteBook](https://github.com/houyichaochaochao/summerVocationNotebook/tree/master/mySelfNotebook)为自己以及老师的笔记记录
+2. [myssm](https://github.com/houyichaochaochao/summerVocationNotebook/tree/master/myssm)为实训项目，如果有后续项目会继续补充在下面
+3. [相关学习资料汇总](https://github.com/houyichaochaochao/summerVocationNotebook/tree/master/%E7%9B%B8%E5%85%B3%E5%AD%A6%E4%B9%A0%E8%B5%84%E6%96%99%E6%B1%87%E6%80%BB)这个为项目中会用到的一些资料，包括但不限于老师给予或者自己收集
+4. ***待补充***
 ## 此笔记为我的南开暑假实习培训笔记
 - 因此笔记为上课随老师直接敲写而成，而对于markdown语法还有一些懵懂之处，遂待日后实习结束之后再修订
 - 几天熟悉后我的笔记会更加清晰合理
