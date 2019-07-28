@@ -8,6 +8,9 @@
 - 因此笔记为上课随老师直接敲写而成，而对于markdown语法还有一些懵懂之处，遂待日后实习结束之后再修订
 - 几天熟悉后我的笔记会更加清晰合理
 - 笔记中有诸多不足和错误之处，可适当参考
+- 以下为我个人笔记的链接
+>[20190726](https://github.com/houyichaochaochao/summerVocationNotebook/blob/master/mySelfNotebook/0726days/7.26.md)
+>[20190727](https://github.com/houyichaochaochao/summerVocationNotebook/blob/master/mySelfNotebook/0727days/0727.md)
 ***注：自己整理的笔记以及源码在myselfnotebook内中***
 
 ---
