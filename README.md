@@ -10,9 +10,7 @@
 - 笔记中有诸多不足和错误之处，可适当参考
 - 以下为我个人笔记的链接
 > - [20190726](https://github.com/houyichaochaochao/summerVocationNotebook/blob/master/mySelfNotebook/0726days/7.26.md)
-
 > - [20190727](https://github.com/houyichaochaochao/summerVocationNotebook/blob/master/mySelfNotebook/0727days/0727.md)
-
 ***注：自己整理的笔记以及源码在myselfnotebook内中***
 
 ---
