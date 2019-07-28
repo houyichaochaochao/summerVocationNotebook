@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.PeopleDao">
+
+
+
+	<select id="byPassportId" parameterType="int"
+		resultType="Passport">
+		select *
+		from Passports
+		where id = #{passportId}
+	</select>
+<!-- type  这里指的是我需要的结果集和 -->
+	<resultMap type="People" id="GetPassport">
+		<!-- 这里描述的是字段和属性的映射关系 -->
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<!-- property是类中的属性 -->
+		<association property="passport" column="passportId"
+			select="byPassportId" />
+	</resultMap>
+	<select id="findById" parameterType="int" resultMap="GetPassport">
+	select * 
+	from Peoples
+	where id = #{id}
+	</select>
+	<select id = "findAll" resultMap="GetPassport">
+	select * 
+	from Peoples
+	</select>
+
+
+	<!-- 插入 删除 更新 -->
+	<insert id="insert" parameterType="People"
+		useGeneratedKeys="true" keyProperty="id">
+		insert into
+		Peoples
+		<!-- 这里是我发明的写法，不过应该是对的,这里的passport是主函数那边直接赋值进去的，
+		或者应该说先添加护照，然后选择一个护照给这个人 -->
+		values(null,#{name},#{passport.id})
+	</insert>
+
+	<update id="update" parameterType="People">
+		update Peoples
+		set name=#{name},passportId=#{passport.id}
+		where id = #{id}
+	</update>
+
+	<delete id="delete" parameterType="int">
+		delete
+		from Peoples
+		where id = #{id}
+	</delete>
+
+</mapper>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.PassportDao">
+	<select id="getPeopleByPassportId" parameterType="int"
+		resultType="People">
+		select *
+		from Peoples
+		where passportId = #{passportId}
+	</select>
+
+	<resultMap type="Passport" id="GetPeople">
+		<id column="id" property="id" />
+		<result column="serialno" property="serialno" />
+		<result column="expire" property="expire" />
+		<association property="people" column="id"
+			select="getPeopleByPassportId" />
+	</resultMap>
+
+	<select id="findById" parameterType="int" resultMap="GetPeople">
+		select *
+		from Passports
+		where id = #{id}
+	</select>
+
+	<select id="findAll" resultMap="GetPeople">
+		select *
+		from Passports
+	</select>
+	
+	<!-- 插入 删除  更新  -->
+	<insert id="insert" parameterType="Passport" useGeneratedKeys="true" keyProperty="id">
+	insert into 
+	Passports
+	values(null,#{serialno},#{expire})	
+	</insert>
+	<delete id="delete" parameterType="int">
+	delete 
+	from Passports	
+	where id = #{id}	
+	</delete>
+	<!-- 这个id的名字也来自我们设置的Dao方法 -->
+	<update id="update"  parameterType="Passport">
+	update Passports
+	set serialno=#{serialno},expire=#{expire}
+	where id = #{id}
+	</update>
+	
+	
+	
+	
+	
+	
+</mapper>

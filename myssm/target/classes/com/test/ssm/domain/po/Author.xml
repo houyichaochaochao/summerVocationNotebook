@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.AuthorDao">
+
+	<!-- 我的天啊，这里int增加了一个小空格竟然出错了 -->
+	<select id="byAuthorByIdGetBooksInBooksAndAuthorAndBooks"
+		parameterType="int" resultType="Book">
+		<!--  select Books.*
+		FROM Books,BookAndAuthor
+		where Books.id = BookAndAuthor.bookId and
+		BookAndAuthor.authorId=#{authorId} -->
+	<!-- 以下为内联写法 -->	
+		select Books.*
+		FROM Books
+		INNER JOIN BookAndAuthor
+		ON Books.id= BookAndAuthor.bookId
+		where BookAndAuthor.authorId = #{authorId}
+	</select>
+
+
+	<resultMap type="Author" id="GetBooks">
+		<id column="id" property="id" />
+		<!-- 除了主键，其它的必须用result -->
+		<result column="name" property="name" />
+		<result column="gender" property="gender" />
+		<!-- 这个Book 就是别名是伙伴的意思，因为我们在package中把整个名简化了 -->
+<!-- 这里我把books 写成 Books 是不会编译通过的，因为这里对应的是 我实体类里面的属性，所以必须一致 -->
+		<collection property="books" ofType="Book" column="id"
+			select="byAuthorByIdGetBooksInBooksAndAuthorAndBooks" />
+	</resultMap>
+	<!-- 这里只是为了显示出与作者所有有关的信息才使用联查，实际上一张表估计就够用了，不是特别大的项目-->
+	<select id="findById" parameterType="int" resultMap="GetBooks">
+		select *
+		from Authors
+		where id = #{id}
+	</select>
+	<select id="findAll" resultMap="GetBooks">
+	Select *
+	from Authors
+	</select>
+	<insert id="insert" parameterType="author" useGeneratedKeys="true" keyProperty="id">
+ 		insert into Authors
+ 		values(null,#{name},#{gender})
+	</insert>
+	<update id="update" parameterType="author" >
+		update Authors
+		set name=#{name},gender=#{gender}
+		where id = #{id}
+	</update>
+	<delete id="delete" parameterType="int">
+		delete from Authors
+		where id = #{id}
+	</delete>
+
+</mapper>

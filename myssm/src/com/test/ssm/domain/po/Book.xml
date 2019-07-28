@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.BookDao">
+	<!-- 区别在是多表联查，还是表连接的方式 -->
+	<!-- 注意select 这种语句里面必须写返回类型 ,还有参数类型描述,除非参数是列表 -->
+	<select id="byBooksId" parameterType="int" resultType="Book">
+		<!-- 你可能不信，我分不清 from and form 同时我也没有分清 INNER 和 INEER -->
+		select Authors.*
+		from Authors
+		INNER JOIN BookAndAuthor
+		ON Authors.id =
+		BookAndAuthor.authorId
+		where BookAndAuthor.bookId= #{bookId}
+	</select>
+
+	<select id="byPressId" parameterType="int" resultType="Press">
+		select *
+		from Presses
+		where id = #{pressId}
+	</select>
+
+	<resultMap type="Book" id="GetPressAndAuthors">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="isbn" property="isbn" />
+		<association property="press" column="pressId"
+			select="byPressId" />
+		<collection property="authors" ofType="Author" column="id"
+			select="byBooksId" />
+	</resultMap>
+
+
+	<select id="findById" parameterType="int"
+		resultMap="GetPressAndAuthors">
+		select *
+		from Books
+		where id = #{id}
+	</select>
+	<!-- 之所以findAll 去除了 parameterType 是因为本来就是可选元素,所以不是那么必要 还有就是ALL,没办法像id一样准确说出参数属性，况且我们的框架里也不需要参数 -->
+	<select id="findAll" resultMap="GetPressAndAuthors">
+		select *
+		from Books
+	</select>
+
+	<!-- 插入 -->
+	<insert id="insert" parameterType="Book" useGeneratedKeys="true"
+		keyProperty="id">
+		insert into Books
+		<!-- 这里我使用了Press.id,因为老师的实体类里面么有直接的id 构造方法 这里的排序是按照顺序来的 -->
+		<!-- 这里是老师提到的坑，但是我自己理解也是这样填写的，对照数据库就行 -->
+		<!-- 不过为啥不直接构造一个用id的方法呢，是因为在xml文件中可以动态修改吗，不被编译,这块可以问老师 -->
+		value(null,#{name},#{isbn},#{press.id})
+	</insert>
+	<!-- 更新 -->
+	<update id="update" parameterType="Book">
+		update Books
+		<!-- 这里的press.id 是来自Book.java 那个持久化的对象,且没有顺序 -->
+		<!-- There is no getter for property named 'press4' in 'class com.test.ssm.domain.po.Book' 
+			### The error may exist in com/test/ssm/domain/po/Book.xml -->
+		set name=#{name},isbn=#{isbn},pressId=#{press.id}
+		where id = #{id}
+	</update>
+
+	<!-- 删除 -->
+	<delete id="delete" parameterType="int">
+		delete
+		from Books
+		<!-- 这个名字不重要,但是好像必须保持一致 我需要在这里做个实验 -->
+		where id = #{id}
+	</delete>
+
+
+
+
+
+</mapper>

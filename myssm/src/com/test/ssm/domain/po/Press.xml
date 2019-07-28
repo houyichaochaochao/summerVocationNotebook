@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.PressDao">
+	<!-- 别名是伙伴 -->
+	<select id="byPressId" parameterType="int" resultType="Book">
+		select *
+		from Books
+		<!-- 这个pressId随意写,是下面传上来的 -->
+		where pressId = #{pressId}
+	</select>
+
+	<!-- 这里是一的一端 -->
+	<resultMap type="Press" id="GetBooks">
+		<id column="id" property="id" />
+		<result column="name" property="name" />
+		<result column="address" property="address" />
+		<collection property="books" ofType="Book" column="id"
+			select="byPressId" />
+	</resultMap>
+	<!-- 这里出版社定义的方法只是为了查找书籍 -->
+
+	<select id="findById" parameterType="int" resultMap="GetBooks">
+		select *
+		from Presses
+		where id = #{id}
+	</select>
+	<select id="findAll" resultMap="GetBooks">
+		select *
+		from Presses
+	</select>
+
+	<!-- 加入插入，更新，删除 -->
+	<!-- 注意属性之间不加逗号分隔 -->
+	<insert id="insert" parameterType="press"
+		useGeneratedKeys="true" keyProperty="id">
+		insert into
+		<!--这个名字我竟然忘了 -->
+		Presses
+		<!-- 这个null 不能省,只有更新的时候需要写=号 -->
+		<!--  values(null,name=#{name},address=#{address}) -->
+		values(null,#{name},#{address})
+	</insert>
+	<update id="update" parameterType="Press">
+		update Presses
+		set name
+		=#{name},address=#{address}
+		where id = #{id}
+	</update>
+	<!-- 注意这里"int "这里面千万不能加空格 -->
+	<delete id="delete" parameterType="int">
+		delete
+		from Presses
+		where id = #{id}
+	</delete>
+</mapper>
+
+
+
