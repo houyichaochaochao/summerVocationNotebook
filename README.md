@@ -7,5 +7,7 @@
 
 ---
 ## 另外在此项目中我日后会补充我们的web项目，基于spring boot，spring，springMVC这些框架。
+## 自此实训的项目整体文件夹已经上传到[myssm](https://github.com/houyichaochaochao/summerVocationNotebook/tree/master/myssm)
+- 我会定时更新，如果有新的项目我也会即时上传，包含了自己踩坑的全记录
 ---
 ## 欢迎大家指正！
