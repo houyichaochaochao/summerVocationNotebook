@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.AuthorDao">
+	<select id="byAuthorsIdGetBooksInBookAndAuthorANDBooks" parameterType="int" resultType="Book">
+        select books.* 
+        FROM books, bookandauthor 
+        where books.id = bookandauthor.bookId and bookandauthor.authorId = #{authoId}
+	</select>
+
+	<resultMap type="Author" id="GetBooks">
+		<id column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="gender" property="gender"/>
+		<collection property="books" ofType="Book" column="id" select="byAuthorsIdGetBooksInBookAndAuthorANDBooks"/>
+	</resultMap>
+
+	<select id="findById" parameterType="int" resultMap="GetBooks">
+		select * 
+		from Authors 
+		where id = #{id}
+	</select>
+</mapper>

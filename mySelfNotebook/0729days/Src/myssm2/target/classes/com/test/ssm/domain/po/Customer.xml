@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.ssm.dao.CustomerDao">
+	<resultMap type="Customer" id="getCustomerByRef">
+		<id column="id" property="id"/>
+		<result column="name" property="name"/>
+		<result column="email" property="email"/>
+		<result column="phone" property="phone"/>
+		<result column="password" property="password"/>
+		<result column="gender" property="gender"/>
+		<result column="salary" property="salary"/>
+		<result column="birthday" property="birthday"/>
+		<result column="regtime" property="regTime"/>
+		<result column="updatetime" property="updatetime"/>
+		<association property="passport" javaType="Passport">
+			<id column="pid" property="id"/>
+			<result column="serialno" property="serialno"/>
+			<result column="expire" property="expire"/>
+			<association property="customer" javaType="Customer" resultMap="getCustomerByRef"/>
+		</association>
+	</resultMap>
+	
+	<select id="findById" parameterType="int" resultMap="getCustomerByRef">
+		select *, passports.id as pid  
+		from customers INNER JOIN passports 
+			on customers.passportId = passports.id 
+			where customers.id = #{id}
+	</select>
+		<select id="findAll" resultMap="getCustomerByRef">
+		select *, passports.id as pid  
+		from customers INNER JOIN passports 
+			on customers.passportId = passports.id 
+	</select>
+</mapper>
